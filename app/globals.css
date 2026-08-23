@@ -1,0 +1,726 @@
+/*
+ * 부산관광공사 팔레트. 값은 design_handoff_busan_mice_venue_map/README.md의
+ * Design Tokens 절이 출처다. 임의로 바꾸지 말 것.
+ */
+:root {
+  --navy: #002b5c;
+  --blue: #0071ce;
+  --blue-dark: #005ba8;
+  --cyan: #00a6ce;
+  --coral: #ff6a4d;
+  --ink: #1a2330;
+  --gray: #6b7686;
+  --gray2: #9ba5b3;
+  --line: #e4e8ee;
+  --line2: #f0f2f6;
+  --bg: #fafbfc;
+  --tint-badge: #eaf3fb;
+  --tint-row: #f2f8fd;
+
+  --panel-w: 440px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #e7ebf0;
+  color: var(--ink);
+  font-family: var(--font-noto-sans-kr), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--blue);
+}
+a:hover {
+  color: var(--blue-dark);
+}
+
+/* ===================== 지도 ===================== */
+/*
+ * 클래스를 두 번 적어 특이도를 올린다. MapLibre가 이 div에 .maplibregl-map을
+ * 붙이는데 그 규칙이 position: relative와 자체 폰트를 들고 있다. 특이도가 같아
+ * 승패가 CSS 로드 순서로 갈리고, 지면 지도가 높이 0으로 접히고(캔버스가 안에서
+ * absolute라 높이를 만들지 않는다) 한글이 Arial로 떨어진다.
+ */
+.map-canvas.map-canvas {
+  position: absolute;
+  inset: 0 0 0 var(--panel-w);
+  z-index: 0;
+  background: #e9edf1;
+  /* 마커·말풍선·저작권 표기까지 본문 서체를 물려받게 한다. */
+  font: inherit;
+}
+
+/* 키가 없거나 SDK 로드 실패 시. 지도가 화면 대부분이라 빈 회색을 두면 고장으로 읽힌다. */
+.map-fallback {
+  position: absolute;
+  inset: 0 0 0 var(--panel-w);
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: 40px;
+  background: #e9edf1;
+  text-align: center;
+}
+.map-fallback div {
+  max-width: 460px;
+}
+.map-fallback h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.map-fallback p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--gray);
+}
+.map-fallback code {
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 12px;
+}
+
+/* ===================== 좌측 패널 ===================== */
+.panel {
+  position: absolute;
+  z-index: 700;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--panel-w);
+  background: #fff;
+  box-shadow: 2px 0 12px rgb(0 0 0 / 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  height: 60px;
+  flex: none;
+  background: var(--navy);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px;
+}
+.brand b {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.brand small {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgb(255 255 255 / 0.6);
+}
+
+.sbox {
+  padding: 12px 16px 10px;
+  flex: none;
+}
+.sfield {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  border: 1.5px solid var(--navy);
+  border-radius: 6px;
+  padding: 0 12px;
+}
+.sfield input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: inherit;
+}
+.sfield input::placeholder {
+  color: var(--gray2);
+  font-weight: 400;
+}
+.sfield button {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 2px;
+  line-height: 0;
+}
+
+.tabs {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+.tab {
+  flex: 1;
+  padding: 11px 0 10px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--gray);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+}
+.tab:hover {
+  color: var(--ink);
+}
+.tab.on {
+  color: var(--blue);
+  font-weight: 700;
+  border-bottom-color: var(--blue);
+}
+.tab .num {
+  font-size: 11px;
+  color: var(--gray2);
+  margin-left: 3px;
+}
+.tab.on .num {
+  color: var(--gray);
+}
+
+.gu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+}
+.chip {
+  flex: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 15px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #4a4a4a;
+  cursor: pointer;
+  transition: 0.12s;
+}
+.chip:hover {
+  border-color: var(--gray2);
+}
+.chip.on {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+  font-weight: 700;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 8px;
+  flex: none;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.bar .cnt {
+  font-size: 12px;
+  color: var(--gray);
+}
+.bar .cnt b {
+  color: var(--ink);
+  font-weight: 700;
+}
+.bar .rst {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--gray);
+  cursor: pointer;
+}
+.bar .rst:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+}
+.list::-webkit-scrollbar {
+  width: 10px;
+}
+.list::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 5px;
+  border: 3px solid #fff;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  border: 0;
+  border-bottom: 1px solid var(--line2);
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+}
+.row:hover {
+  background: #fafafa;
+}
+.row.on {
+  background: var(--tint-row);
+}
+.row.on::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--blue);
+}
+.row .no {
+  width: 20px;
+  flex: none;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray2);
+  padding-top: 2px;
+}
+.row.on .no {
+  color: var(--ink);
+}
+.row .main {
+  flex: 1;
+  min-width: 0;
+}
+.row h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.row .k {
+  margin: 5px 0 0;
+  font-size: 12px;
+  color: var(--gray);
+}
+.row .k .cat {
+  color: var(--blue);
+  font-weight: 500;
+}
+.row .ad {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: #555;
+  line-height: 1.5;
+}
+.row .tl {
+  margin: 5px 0 0;
+  font-size: 12.5px;
+  color: var(--blue);
+}
+/* 좌표가 없어 지도에 찍히지 않는 항목. 목록에서는 계속 보여준다. */
+.row .nocoord {
+  display: inline-block;
+  margin: 6px 0 0;
+  padding: 0 6px;
+  height: 18px;
+  line-height: 18px;
+  border-radius: 3px;
+  background: var(--line2);
+  color: var(--gray);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.empty {
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--gray);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+/* ===================== 지도 오버레이 ===================== */
+.topbar {
+  position: absolute;
+  z-index: 600;
+  top: 14px;
+  left: calc(var(--panel-w) + 20px);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.pill {
+  background: #fff;
+  border: 1px solid rgb(0 0 0 / 0.08);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+  height: 34px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  gap: 8px;
+}
+.pill b {
+  font-weight: 700;
+}
+.pill .sep {
+  width: 1px;
+  height: 12px;
+  background: var(--line);
+}
+
+.legend {
+  position: absolute;
+  z-index: 600;
+  right: 14px;
+  bottom: 110px;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid rgb(0 0 0 / 0.08);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.12);
+  padding: 11px 13px;
+}
+.legend .t {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gray);
+  letter-spacing: 0.04em;
+  margin-bottom: 7px;
+}
+.legend .l {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  margin-top: 5px;
+}
+.legend .sw {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.12);
+}
+
+/* ===================== 마커 ===================== */
+/*
+ * MapLibre가 마커 요소에 붙이는 .maplibregl-marker와 같은 자리 잡기를 쓴다.
+ * (position/top/left) 두 규칙의 특이도가 같아 CSS 순서에 따라 승패가 갈리는데,
+ * 값이 같으면 어느 쪽이 이겨도 결과가 같다. relative로 두면 순서가 뒤집힐 때
+ * 핀이 전부 좌상단에 흐르듯 쌓인다.
+ */
+.mk {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 24px;
+  height: 32px;
+  cursor: pointer;
+}
+.mk svg {
+  position: absolute;
+  inset: 0;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.3));
+  transition: transform 0.12s;
+}
+.mk:hover svg {
+  transform: translateY(-2px) scale(1.06);
+}
+.mk.sel svg {
+  transform: scale(1.25);
+  filter: drop-shadow(0 4px 7px rgb(0 0 0 / 0.4));
+}
+.mk .nm {
+  position: absolute;
+  left: 50%;
+  top: 33px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  color: #191919;
+  text-shadow:
+    0 0 3px #fff,
+    0 0 3px #fff,
+    0 0 3px #fff,
+    0 0 6px #fff;
+  opacity: 0;
+  transition: 0.12s;
+}
+.mk:hover .nm,
+.mk.sel .nm {
+  opacity: 1;
+}
+
+/* ===================== 인포윈도우 ===================== */
+/*
+ * 말풍선은 지도 캔버스 컨테이너 안에 놓인다. 컨테이너가 걸어둔 grab 커서와
+ * user-select: none을 말풍선 안에서만 되돌려 글을 읽고 고를 수 있게 한다.
+ */
+.iw-wrap {
+  position: relative;
+  width: 308px;
+  /* 핀(32px) 위로 띄운다. 꼬리(12px)까지 감안한 값. */
+  margin-bottom: 42px;
+  cursor: default;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.iw {
+  position: relative;
+  background: #fff;
+  border: 1px solid rgb(0 0 0 / 0.06);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.22);
+  padding: 16px 18px 14px;
+}
+/* 아래쪽 꼬리 22×12. 테두리 위에 겹쳐 그려 이음매를 가린다. */
+.iw-tip {
+  position: absolute;
+  left: 50%;
+  bottom: -11px;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 12px;
+  overflow: hidden;
+}
+.iw-tip::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -8px;
+  width: 16px;
+  height: 16px;
+  transform: translateX(-50%) rotate(45deg);
+  background: #fff;
+  border: 1px solid rgb(0 0 0 / 0.06);
+  box-shadow: 0 3px 8px rgb(0 0 0 / 0.12);
+}
+.iw-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: none;
+  color: var(--gray);
+  font-size: 13px;
+  line-height: 30px;
+  cursor: pointer;
+  padding: 0;
+}
+.iw-close:hover {
+  color: var(--ink);
+}
+.iw .cat {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 3px;
+  background: var(--tint-badge);
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.iw h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.35;
+  padding-right: 18px;
+}
+.iw .en {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  color: var(--gray2);
+}
+.iw .divider {
+  height: 1px;
+  background: var(--line);
+  margin: 13px 0;
+}
+.iw dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  row-gap: 8px;
+  column-gap: 8px;
+  align-items: start;
+}
+.iw dt {
+  font-size: 12px;
+  color: var(--gray2);
+  font-weight: 500;
+}
+.iw dd {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+.iw dd a {
+  color: var(--blue);
+  text-decoration: none;
+}
+.iw dd a:hover {
+  text-decoration: underline;
+}
+.iw dd .no {
+  color: var(--gray2);
+}
+.iw .intro {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #4a4a4a;
+  max-height: 88px;
+  overflow: hidden;
+  text-wrap: pretty;
+}
+.iw .intro.open {
+  max-height: none;
+}
+.iw .more {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--gray);
+  cursor: pointer;
+  padding: 6px 0 0;
+}
+.iw .more:hover {
+  color: var(--ink);
+}
+.iw .btns {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+}
+.iw .btns a {
+  flex: 1;
+  text-align: center;
+  height: 36px;
+  line-height: 36px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.iw .btns .p {
+  background: var(--blue);
+  color: #fff;
+}
+.iw .btns .p:hover {
+  background: var(--blue-dark);
+  color: #fff;
+}
+.iw .btns .s {
+  background: #fff;
+  border: 1px solid var(--line);
+  color: #333;
+}
+.iw .btns .s:hover {
+  border-color: var(--gray2);
+  color: #333;
+}
+
+/* ===================== 데이터 없음 안내 ===================== */
+.setup {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 40px;
+}
+.setup > div {
+  max-width: 520px;
+}
+.setup .eyebrow {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gray2);
+}
+.setup h1 {
+  margin: 0 0 16px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.setup ol {
+  margin: 0 0 20px;
+  padding-left: 20px;
+  font-size: 13.5px;
+  line-height: 2;
+  color: var(--gray);
+}
+.setup code {
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+}
+
+/* 데이터 출처 표기. 범례(우하단)·줌 컨트롤과 겹치지 않게 좌하단에 둔다. */
+.credit {
+  position: absolute;
+  z-index: 600;
+  left: calc(var(--panel-w) + 20px);
+  bottom: 12px;
+  margin: 0;
+  padding: 5px 10px;
+  border-radius: 5px;
+  background: rgb(255 255 255 / 0.88);
+  border: 1px solid rgb(0 0 0 / 0.06);
+  font-size: 11px;
+  color: var(--gray);
+}
+.credit a {
+  color: var(--gray);
+  text-decoration: none;
+}
+.credit a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
