@@ -1,6 +1,7 @@
 import {
   getDataset,
   getFacilityCounts,
+  getMappableVenues,
   getRegionSummaries,
   getVenues,
 } from '@/lib/venue-data';
@@ -44,6 +45,11 @@ export default function Page() {
         venues={venues}
         regions={getRegionSummaries()}
         facilityCounts={getFacilityCounts()}
+        dataInfo={{
+          updatedAt: dataUpdatedAt,
+          total: venues.length,
+          mapped: getMappableVenues().length,
+        }}
       />
     </main>
   );
