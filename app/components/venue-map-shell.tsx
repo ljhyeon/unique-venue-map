@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { FACILITIES, FACILITY_COLOR, type Facility } from '@/lib/facility';
+import { siteConfig } from '@/lib/site-config';
 import type { RegionSummary, Venue } from '@/lib/venue-types';
 
 import VenueMap from './venue-map';
@@ -15,19 +16,31 @@ type Props = {
   venues: Venue[];
   regions: RegionSummary[];
   facilityCounts: { facility: Facility; count: number }[];
+  /** 데이터 출처 안내에 쓰는 값. 전부 빌드된 데이터셋에서 온다. */
+  dataInfo: { updatedAt: string; total: number; mapped: number };
 };
 
-export default function VenueMapShell({ venues, regions, facilityCounts }: Props) {
+/** '2026-07-14' → '2026년 7월 14일'. 형식이 다르면 원문 그대로 둔다. */
+function formatDate(iso: string) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return iso;
+  return `${m[1]}년 ${Number(m[2])}월 ${Number(m[3])}일`;
+}
+
+export default function VenueMapShell({ venues, regions, facilityCounts, dataInfo }: Props) {
   const [facility, setFacility] = useState<FacilityFilter>(ALL);
   const [region, setRegion] = useState<RegionFilter>(ALL);
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   /** 리스트에서 고른 경우에만 증가시켜 지도 이동을 유발한다. */
   const [flyToken, setFlyToken] = useState(0);
 
   const searchRef = useRef<HTMLInputElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const aboutRef = useRef<HTMLDivElement | null>(null);
+  const infoRef = useRef<HTMLButtonElement | null>(null);
 
   /** 지역 칩은 건수 내림차순. 데이터에 실제로 있는 구·군만 노출한다. */
   const regionChips = useMemo(
@@ -69,18 +82,36 @@ export default function VenueMapShell({ venues, regions, facilityCounts }: Props
     list.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
   }, [selectedId]);
 
-  // ⌘K / Ctrl+K → 검색, Esc → 선택 해제.
+  // ⌘K / Ctrl+K → 검색, Esc → 안내 닫기 또는 선택 해제.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         searchRef.current?.focus();
       }
-      if (e.key === 'Escape') setSelectedId(null);
+      // 안내가 열려 있으면 Esc는 그것부터 닫는다. 한 번에 둘 다 닫히면
+      // 안내를 보려다 선택까지 잃는다.
+      if (e.key === 'Escape') {
+        if (aboutOpen) setAboutOpen(false);
+        else setSelectedId(null);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [aboutOpen]);
+
+  // 안내 팝오버 바깥을 누르면 닫는다. 토글 버튼은 제외한다 — 여기서 먼저 닫으면
+  // 이어지는 click이 다시 열어 버튼이 먹통처럼 보인다.
+  useEffect(() => {
+    if (!aboutOpen) return;
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (aboutRef.current?.contains(t) || infoRef.current?.contains(t)) return;
+      setAboutOpen(false);
+    };
+    window.addEventListener('pointerdown', onDown);
+    return () => window.removeEventListener('pointerdown', onDown);
+  }, [aboutOpen]);
 
   const pickFromList = (id: string) => {
     setSelectedId(id);
@@ -128,6 +159,57 @@ export default function VenueMapShell({ venues, regions, facilityCounts }: Props
       <aside className="panel">
         <div className="brand">
           <b>유니크베뉴</b>
+
+          <button
+            ref={infoRef}
+            className={aboutOpen ? 'info on' : 'info'}
+            onClick={() => setAboutOpen((v) => !v)}
+            aria-label="데이터 출처 안내"
+            aria-expanded={aboutOpen}
+            title="데이터 출처"
+            type="button"
+          >
+            <svg width="17" height="17" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <circle cx="9" cy="9" r="7.5" stroke="currentColor" strokeWidth="1.5" />
+              <circle cx="9" cy="5.6" r="1" fill="currentColor" />
+              <path
+                d="M9 8.2v4.6"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+
+          {aboutOpen ? (
+            <div className="about" ref={aboutRef} role="dialog" aria-label="데이터 출처 안내">
+              <h2>데이터 안내</h2>
+              <p>
+                공공데이터포털에 공개된 <b>{siteConfig.sourceName}</b> 파일데이터를 그대로
+                사용합니다.
+              </p>
+
+              <dl>
+                <dt>제공</dt>
+                <dd>부산관광공사 · 공공데이터포털</dd>
+                <dt>기준일</dt>
+                <dd>{formatDate(dataInfo.updatedAt)}</dd>
+                <dt>수록</dt>
+                <dd>
+                  {dataInfo.total}곳 <span className="sub">(지도 표시 {dataInfo.mapped}곳)</span>
+                </dd>
+              </dl>
+
+              <p className="note">
+                원본에 위·경도가 없어 주소를 좌표로 변환해 지도에 표시합니다. 좌표를 확보하지
+                못한 곳은 목록에만 나옵니다. 운영 정보는 바뀔 수 있으니 방문 전 시설에 확인하세요.
+              </p>
+
+              <a className="src" href={siteConfig.sourceUrl} target="_blank" rel="noreferrer">
+                공공데이터포털에서 원본 보기 ↗
+              </a>
+            </div>
+          ) : null}
         </div>
 
         <div className="sbox">
